@@ -2,28 +2,36 @@
 
 ## Overview
 
-This repository contains a **heuristic, vectorized, iterative backtesting framework** designed to simulate **Stop Loss (SL) and Take Profit (TP)** mechanics on time series data for both long and short trading positions.
+This repository contains a **heuristic, vectorized, iterative backtesting framework** designed to simulate **Stop Loss (SL) and Take Profit (TP)** mechanics on OHLC time series data, supporting both long and short trading positions.
 
-Unlike traditional sequential backtesting methods that process trades one by one, this approach applies **forward-agnostic vectorized logic repeatedly** to refine trade entries and exits. This iterative refinement enables efficient and realistic trade signal generation without relying on explicit stateful tracking.
+The core algorithm applies **forward-agnostic vectorized logic repeatedly** to refine trade entry and exit signals until convergence. It merges overlapping signals heuristically and calculates realistic trade returns considering fees and intrabar price action.
 
 ---
 
 ## Features
 
-- Supports **long and short trade signals** with independent SL and TP logic.
-- Uses **vectorized operations** for high performance over large datasets.
-- Employs an **iterative heuristic algorithm** that refines trade signals until convergence.
-- Handles intrabar high/low price triggers for accurate SL/TP exits.
-- Designed for use with pandas DataFrames containing OHLC (Open, High, Low, Close) price data.
+- Supports **long and short entries and exits** with separate SL and TP logic.
+- Employs an **iterative fractal/heuristic algorithm** for refining trades on price bars.
+- Calculates **final trade returns as a pandas Series**, enabling performance analysis.
+- Vectorized approach ensures efficient processing of large datasets.
+- Designed to work with pandas DataFrames containing OHLC data.
+- Includes fee adjustment and handles intrabar high/low price triggers.
 
 ---
 
 ## Usage
 
-1. Prepare your price data in a pandas DataFrame with columns such as `Open`, `High`, `Low`, `Close`.
-2. Generate your entry signals as separate columns for long and short entries.
-3. Use the provided functions to calculate exit signals applying your SL and TP percentages.
-4. Extract trade returns or performance metrics from the output DataFrame.
+1. Prepare a pandas DataFrame containing your price data with `Open`, `High`, `Low`, `Close` columns.
+2. Add the **entry signal columns** named `Long_Trade` and `Short_Trade`:
+   - Set entries in `Long_Trade` column to **-1** to signal long entries.
+   - Set entries in `Short_Trade` column to **-2** to signal short entries.
+3. Call the `get_ret` function with appropriate parameters including:
+   - The DataFrame
+   - The list of signal column names: `['Long_Trade', 'Short_Trade']`
+   - SL and TP percentages
+   - Fee per trade
+   - Minimum trade count threshold (`t_min`)
+4. `get_ret` returns a pandas Series of trade returns (`Ret`), which you can use for further performance evaluation.
 
 ---
 
@@ -31,16 +39,14 @@ Unlike traditional sequential backtesting methods that process trades one by one
 
 ```python
 import pandas as pd
+# Assuming 'df' is your OHLC DataFrame with 'Long_Trade' and 'Short_Trade' columns defined
 
-# Load or generate your OHLC price data in a DataFrame 'df'
-# Add your entry signals columns 'Long_Trade' and 'Short_Trade'
-
-# Define your SL and TP thresholds (e.g., 2% stop loss, 3% take profit)
-stop_loss_pct = 0.02
 take_profit_pct = 0.03
+stop_loss_pct = 0.02
+fee_per_trade = 0.0005
+minimum_trades = 5
+signal_columns = ['Long_Trade', 'Short_Trade']
 
-# Run the backtesting algorithm (example function names)
-df_result = exit_loop(df, 'Long_Trade', take_profit_pct, stop_loss_pct)
-df_result = exit_loop(df_result, 'Short_Trade', take_profit_pct, stop_loss_pct, second=True)
+returns_series = get_ret(df, signal_columns, [0, 0, 0, 0], stop_loss_pct, take_profit_pct, fee_per_trade, minimum_trades)
 
-# Analyze resulting trades in df_result['Trade']
+print(returns_series.describe())
