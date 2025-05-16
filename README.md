@@ -21,7 +21,7 @@ The core algorithm applies **forward-agnostic vectorized logic repeatedly** to r
 
 ## Usage
 
-1. Prepare a pandas DataFrame containing your price data with `Open`, `High`, `Low`, `Close` columns.
+1. Prepare a pandas DataFrame containing your price data with `High`, `Low`, `Close` columns.
 2. Add the **entry signal columns** named `Long_Trade` and `Short_Trade`:
    - Set entries in `Long_Trade` column to **-1** to signal long entries.
    - Set entries in `Short_Trade` column to **-2** to signal short entries.
@@ -30,6 +30,7 @@ The core algorithm applies **forward-agnostic vectorized logic repeatedly** to r
    - The list of signal column names: `['Long_Trade', 'Short_Trade']`
    - SL and TP percentages
    - Fee per trade
+   - Slippage or delay cost
    - Minimum trade count threshold (`t_min`)
 4. `get_ret` returns a pandas Series of trade returns (`Ret`), which you can use for further performance evaluation.
 
