@@ -1,0 +1,10 @@
+# Core dependencies
+pandas>=1.5.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+
+# Jupyter support
+jupyterlab>=3.0.0
+
+# Optional: if users run classic notebooks instead of JupyterLab
+# jupyter>=1.0.0
