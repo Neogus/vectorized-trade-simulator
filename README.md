@@ -50,3 +50,24 @@ signal_columns = ['Long_Trade', 'Short_Trade']
 returns_series = get_ret(df, signal_columns, [0, 0, 0, 0], stop_loss_pct, take_profit_pct, fee_per_trade, minimum_trades)
 
 print(returns_series.describe())
+
+
+## License
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) license.
+
+Free to view, share, and adapt for non-commercial use.
+
+Commercial use requires explicit permission or paid licensing.
+
+Learn more about this license
+
+## Contact
+For licensing inquiries or collaboration:
+
+Gustavo Rabino
+Email: gusrab@gmail.com
+LinkedIn: https://www.linkedin.com/in/gustavo-rabino-58411238/
+
+
+
+
