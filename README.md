@@ -89,6 +89,16 @@ The output is for **informational and educational purposes only** and should **n
 
 By using this software, you acknowledge and accept these risks.
 
+## 💖 Support This Project
+
+If you find this project useful, consider supporting its development:
+
+<a href="https://github.com/sponsors/Neogus">
+  <img src="https://img.shields.io/badge/Sponsor-❤️-ea4aaa?style=for-the-badge&logo=github" alt="GitHub Sponsors" />
+</a>
+
+Your support helps keep this project maintained and free for everyone. Thank you! 🙏
+
 ## License
 
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
