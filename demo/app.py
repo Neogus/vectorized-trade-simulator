@@ -33,6 +33,10 @@ st.sidebar.caption(
     "[GitHub](https://github.com/Neogus/vectorized-trade-simulator) · "
     "[Tecana](https://github.com/Neogus/tecana)"
 )
+st.sidebar.caption(
+    "☕ [Support this project](https://github.com/sponsors/Neogus) · "
+    "[Ko-fi](https://ko-fi.com/neogus43222)"
+)
 
 # ── Main ───────────────────────────────────────────────────────────────
 
@@ -113,8 +117,8 @@ with col4:
 # Simple signal generation (no tecana dependency for cloud)
 st.markdown("**Signal method:**")
 signal_method = st.selectbox("", [
-    "RSI Crossover (overbought/oversold)",
     "SMA Crossover (fast/slow)",
+    "RSI Crossover (overbought/oversold)",
     "Random Entries (demo only)",
 ])
 
@@ -137,8 +141,8 @@ if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
         rs = gain / loss.replace(0, np.nan)
         rsi = 100 - (100 / (1 + rs))
         prev_rsi = rsi.shift(1)
-        entries[(prev_rsi < 30) & (rsi >= 30)] = 1   # Long on oversold exit
-        entries[(prev_rsi > 70) & (rsi <= 70)] = -1   # Short on overbought exit
+        entries[(prev_rsi < 35) & (rsi >= 35)] = 1   # Long on oversold exit
+        entries[(prev_rsi > 65) & (rsi <= 65)] = -1   # Short on overbought exit
 
     elif signal_method.startswith("SMA"):
         fast = df["close"].rolling(10).mean()
@@ -218,7 +222,16 @@ if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
                         file_name="demo_trades.csv", mime="text/csv")
 
 st.markdown("---")
-st.caption(
-    "⚠️ *Demo mode with limited data. Install locally for full features. "
-    "This is for educational purposes only — not financial advice.*"
-)
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.caption(
+        "⚠️ *Demo mode with limited data. Install locally for full features. "
+        "This is for educational purposes only — not financial advice.*"
+    )
+with col2:
+    st.markdown(
+        '<p style="text-align:right; font-size:0.85em; opacity:0.7;">'
+        '☕ <a href="https://github.com/sponsors/Neogus">Sponsor</a> · '
+        '<a href="https://ko-fi.com/neogus43222">Ko-fi</a></p>',
+        unsafe_allow_html=True,
+    )
