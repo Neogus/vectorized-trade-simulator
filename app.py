@@ -10,26 +10,33 @@ st.set_page_config(
 )
 
 # ── Sidebar ────────────────────────────────────────────────────────────
+# Note: Streamlit auto-generates page navigation at the top of the sidebar
+# from the pages/ folder. Our sidebar content appears below it.
 
-st.sidebar.title("📊 Trade Simulator")
+st.sidebar.markdown("### 📊 Trade Simulator")
+st.sidebar.caption("Navigate using the pages above ☝️")
 st.sidebar.markdown("---")
+
+# Workflow guide
 st.sidebar.markdown(
     "**Workflow:**\n"
-    "1. 📂 Load Data\n"
-    "2. ⚙️ Configure\n"
-    "3. ▶️ Run Backtest\n"
-    "4. 📈 Results"
+    "1. 📂 Load data\n"
+    "2. ⚙️ Configure params\n"
+    "3. ▶️ Run backtest\n"
+    "4. 📈 View results"
 )
 
-# Show data status in sidebar
+st.sidebar.markdown("---")
+
+# Show data status
 if "ohlcv_data" in st.session_state and st.session_state.ohlcv_data is not None:
     df = st.session_state.ohlcv_data
-    st.sidebar.success(f"✅ Data loaded: {len(df):,} bars")
+    st.sidebar.success(f"✅ Data: {len(df):,} bars")
     st.sidebar.caption(
         f"{df.index.min().strftime('%Y-%m-%d')} → {df.index.max().strftime('%Y-%m-%d')}"
     )
 else:
-    st.sidebar.warning("No data loaded yet")
+    st.sidebar.warning("No data loaded")
 
 if "backtest_results" in st.session_state and st.session_state.backtest_results is not None:
     n = len(st.session_state.backtest_results)
@@ -37,7 +44,7 @@ if "backtest_results" in st.session_state and st.session_state.backtest_results 
 
 st.sidebar.markdown("---")
 st.sidebar.caption(
-    "Built with [Tecana](https://github.com/Neogus/tecana) · "
+    "[Tecana](https://github.com/Neogus/tecana) · "
     "[GitHub](https://github.com/Neogus/vectorized-trade-simulator)"
 )
 
@@ -63,11 +70,17 @@ st.markdown(
 
     ### Signal Convention
 
-    | Value | Meaning |
-    |-------|---------|
-    | **+1** | LONG entry (bullish) |
-    | **-1** | SHORT entry (bearish) |
-    | **0** | No signal (neutral) |
+    This simulator uses `+1 = LONG` / `-1 = SHORT` internally.
+    If you use [Tecana](https://pypi.org/project/tecana/) signals (which use
+    the opposite convention: `-1 = buy`, `+1 = sell`), the app **automatically
+    negates** them so the two systems stay aligned. You don't need to do
+    anything — the bridge is built in.
+
+    | Simulator | Tecana (raw) | After auto-negation |
+    |-----------|-------------|---------------------|
+    | **+1** LONG (bullish) | -1 buy (bullish) | → +1 ✅ |
+    | **-1** SHORT (bearish) | +1 sell (bearish) | → -1 ✅ |
+    | **0** No signal | 0 no signal | → 0 ✅ |
 
     ---
 

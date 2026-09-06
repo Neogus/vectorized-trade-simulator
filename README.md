@@ -60,12 +60,15 @@ vectorized-trade-simulator/
 
 ## Signal Convention
 
+The simulator engine uses:
+
 | Value | Meaning |
 |-------|---------|
 | **+1** | LONG entry (bullish) |
 | **-1** | SHORT entry (bearish) |
 | **0** | No signal (neutral) |
 
+> **Tecana compatibility:** The [Tecana](https://github.com/Neogus/tecana) library uses the opposite convention (`-1 = buy`, `+1 = sell`). When using Tecana signals with this simulator, the app **automatically negates** them to align the two systems. No manual conversion needed.
 ## Dependencies
 
 - **Required:** numpy, pandas, streamlit, plotly
