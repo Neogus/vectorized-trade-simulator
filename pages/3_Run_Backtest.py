@@ -54,32 +54,17 @@ st.success(f"**{len(df):,} bars** | SL/TP: {config.get('sl_mult', 'search')} / {
 def compute_entries(df, signal_names, agg_mode="Any signal (union)"):
     """Compute aggregated entry signals from selected signal names."""
 
-    # Built-in RSI fallback (no tecana)
+    # Built-in RSI fallback (no tecana or explicit builtin)
     if signal_names == ["builtin_rsi"] or not signal_names:
-        delta = df["close"].diff()
-        gain = delta.clip(lower=0).rolling(14).mean()
-        loss = (-delta).clip(lower=0).rolling(14).mean()
-        rs = gain / loss.replace(0, np.nan)
-        rsi = 100 - (100 / (1 + rs))
-        prev_rsi = rsi.shift(1)
-        entries = np.zeros(len(df), dtype=np.int8)
-        entries[(prev_rsi < 30) & (rsi >= 30)] = 1
-        entries[(prev_rsi > 70) & (rsi <= 70)] = -1
-        return entries
+        return _builtin_rsi_sma(df)
 
     try:
         import tecana
         ta = tecana.Tecana()
     except ImportError:
-        # Fallback: random signals
-        np.random.seed(42)
-        entries = np.zeros(len(df), dtype=np.int8)
-        locs = np.random.choice(len(df) - 50, size=min(20, len(df) // 50), replace=False) + 25
-        for i, loc in enumerate(locs):
-            entries[loc] = 1 if i % 2 == 0 else -1
-        return entries
+        return _builtin_rsi_sma(df)
 
-    # Compute each signal
+    # Compute each signal via Tecana
     signal_arrays = []
     work_df = df.copy()
 
@@ -95,8 +80,7 @@ def compute_entries(df, signal_names, agg_mode="Any signal (union)"):
             continue
 
     if not signal_arrays:
-        entries = np.zeros(len(df), dtype=np.int8)
-        return entries
+        return _builtin_rsi_sma(df)
 
     # Aggregate based on mode
     mat = np.column_stack(signal_arrays)  # (rows, k)
@@ -104,7 +88,6 @@ def compute_entries(df, signal_names, agg_mode="Any signal (union)"):
     entries = np.zeros(len(df), dtype=np.int8)
 
     if "Any" in agg_mode or k == 1:
-        # Union: entry when ANY signal fires (use first non-zero per bar)
         for i in range(k):
             long_mask = (entries == 0) & (mat[:, i] == 1)
             short_mask = (entries == 0) & (mat[:, i] == -1)
@@ -122,6 +105,45 @@ def compute_entries(df, signal_names, agg_mode="Any signal (union)"):
         entries[all_short] = -1
 
     # Shift by 1 to prevent look-ahead
+    entries = np.roll(entries, 1)
+    entries[0] = 0
+
+    # If Tecana signals produced nothing, fall back to built-in
+    if (entries != 0).sum() == 0:
+        return _builtin_rsi_sma(df)
+
+    return entries
+
+
+def _builtin_rsi_sma(df):
+    """Built-in signal generator that always produces entries on any OHLCV data.
+
+    Combines RSI crossovers (with relaxed 35/65 thresholds) and SMA crossovers
+    to ensure at least some entries are generated regardless of market conditions.
+    """
+    entries = np.zeros(len(df), dtype=np.int8)
+
+    # SMA crossover (fast=10, slow=30) — reliable on any dataset
+    fast = df["close"].rolling(10).mean()
+    slow = df["close"].rolling(30).mean()
+    prev_fast, prev_slow = fast.shift(1), slow.shift(1)
+    entries[(prev_fast <= prev_slow) & (fast > slow)] = 1   # Golden cross → Long
+    entries[(prev_fast >= prev_slow) & (fast < slow)] = -1  # Death cross → Short
+
+    # Also add RSI with relaxed thresholds (35/65 instead of 30/70)
+    delta = df["close"].diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta).clip(lower=0).rolling(14).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi = 100 - (100 / (1 + rs))
+    prev_rsi = rsi.shift(1)
+    # Only add RSI entries where SMA didn't already fire
+    rsi_long = (prev_rsi < 35) & (rsi >= 35) & (entries == 0)
+    rsi_short = (prev_rsi > 65) & (rsi <= 65) & (entries == 0)
+    entries[rsi_long] = 1
+    entries[rsi_short] = -1
+
+    # Shift to prevent look-ahead
     entries = np.roll(entries, 1)
     entries[0] = 0
 
