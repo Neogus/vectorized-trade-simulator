@@ -13,6 +13,22 @@ from simulator.metrics import total_return, max_drawdown, sharpe, accuracy
 from simulator.signals import Signal
 
 st.set_page_config(page_title="Run Backtest", page_icon="▶️", layout="wide")
+
+# ── Custom sidebar navigation ──────────────────────────────────────────
+
+st.markdown(
+    """<style>[data-testid="stSidebarNav"] { display: none; }</style>""",
+    unsafe_allow_html=True,
+)
+st.sidebar.title("📊 Trade Simulator")
+st.sidebar.markdown("**Sections**")
+st.sidebar.page_link("app.py", label="🏠 App")
+st.sidebar.page_link("pages/1_Data_Source.py", label="📂 Data Source")
+st.sidebar.page_link("pages/2_Configure.py", label="⚙️ Configure")
+st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
+st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
+st.sidebar.markdown("---")
+
 st.title("▶️ Run Backtest")
 
 # ── Validate prerequisites ─────────────────────────────────────────────

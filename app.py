@@ -9,12 +9,29 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Sidebar ────────────────────────────────────────────────────────────
-# Note: Streamlit auto-generates page navigation at the top of the sidebar
-# from the pages/ folder. Our sidebar content appears below it.
+# ── Hide default auto-navigation and build custom sidebar ──────────────
 
-st.sidebar.markdown("### 📊 Trade Simulator")
-st.sidebar.caption("Navigate using the pages above ☝️")
+st.markdown(
+    """
+    <style>
+    /* Hide the auto-generated page navigation */
+    [data-testid="stSidebarNav"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ── Custom sidebar ─────────────────────────────────────────────────────
+
+st.sidebar.title("📊 Trade Simulator")
+st.sidebar.markdown("**Sections**")
+
+st.sidebar.page_link("app.py", label="🏠 App", icon=None)
+st.sidebar.page_link("pages/1_Data_Source.py", label="📂 Data Source")
+st.sidebar.page_link("pages/2_Configure.py", label="⚙️ Configure")
+st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
+st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
+
 st.sidebar.markdown("---")
 
 # Workflow guide
@@ -59,7 +76,7 @@ st.markdown(
 
     ### Getting Started
 
-    Use the **sidebar pages** to navigate through the workflow:
+    Use the **sidebar** to navigate through the workflow:
 
     | Step | Page | Description |
     |------|------|-------------|
