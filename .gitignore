@@ -1,0 +1,41 @@
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Project-local docs (not for repo)
+PROJECT_CONTEXT.md
+LINKEDIN_PROJECT.md
+LINKEDIN_POST.md
+
+# Data files (user uploads)
+*.parquet
+*.csv
+!requirements.txt
+!demo/requirements.txt

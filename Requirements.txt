@@ -1,10 +1,20 @@
-# Core dependencies
-pandas>=1.5.0
+# Core
 numpy>=1.21.0
+pandas>=1.5.0
+
+# Visualization
+plotly>=5.18.0
 matplotlib>=3.5.0
 
-# Jupyter support
-jupyterlab>=3.0.0
+# Streamlit
+streamlit>=1.30.0
 
-# Optional: if users run classic notebooks instead of JupyterLab
-# jupyter>=1.0.0
+# Technical indicators (optional but recommended)
+tecana>=2.0.0
+
+# Data sources (optional)
+yfinance>=0.2.0
+# ccxt>=4.0.0          # Uncomment for crypto exchange support
+
+# Jupyter (optional)
+# jupyterlab>=3.0.0

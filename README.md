@@ -1,74 +1,101 @@
-# Fractal Heuristic Backtesting Engine for SL/TP Strategies
+# Vectorized Trade Simulator
 
-## Overview
-
-This repository contains a **heuristic, vectorized, iterative backtesting framework** designed to simulate **Stop Loss (SL) and Take Profit (TP)** mechanics on OHLC time series data, supporting both long and short trading positions.
-
-The core algorithm applies **forward-agnostic vectorized logic repeatedly** to refine trade entry and exit signals until convergence. It merges overlapping signals heuristically and calculates realistic trade returns considering fees and intrabar price action.
-
----
+A high-performance backtesting engine for testing stop-loss / take-profit strategies on historical OHLCV data, wrapped in an interactive Streamlit dashboard.
 
 ## Features
 
-- Supports **long and short entries and exits** with separate SL and TP logic.
-- Employs an **iterative fractal/heuristic algorithm** for refining trades on price bars.
-- Calculates **final trade returns as a pandas Series**, enabling performance analysis.
-- Vectorized approach ensures efficient processing of large datasets.
-- Designed to work with pandas DataFrames containing OHLC data.
-- Includes fee adjustment and handles intrabar high/low price triggers.
+- **Vectorized trade simulation** with ATR-based SL/TP barriers and numba JIT acceleration
+- **90+ technical indicators** via [Tecana](https://pypi.org/project/tecana/) integration
+- **160+ trading signals** (momentum, zone, trend, volatility) with int8 encoding
+- **8 scoring formulas** (A–H) for ranking strategies
+- **Smart OHLCV parser** — auto-detects CSV/Parquet/Excel columns, delimiters, date formats
+- **API connectors** — Yahoo Finance (equities) and ccxt (100+ crypto exchanges)
+- **Interactive Streamlit app** with candlestick charts, equity curves, trade overlays, and CSV export
+- **Grid search mode** — sweep SL/TP parameter ranges to find optimal settings
+- Performance metrics: Sharpe ratio, max drawdown, alpha, beta, win rate, profit factor
 
----
+## Quick Start
 
-## Usage
+```bash
+git clone https://github.com/Neogus/vectorized-trade-simulator
+cd vectorized-trade-simulator
+pip install -r requirements.txt
+streamlit run app.py
+```
 
-1. Prepare a pandas DataFrame containing your price data with `High`, `Low`, `Close` columns.
-2. Add the **entry signal columns** named `Long_Trade` and `Short_Trade`:
-   - Set entries in `Long_Trade` column to **-1** to signal long entries.
-   - Set entries in `Short_Trade` column to **-2** to signal short entries.
-3. Call the `get_ret` function with appropriate parameters including:
-   - The DataFrame
-   - The list of signal column names: `['Long_Trade', 'Short_Trade']`
-   - SL and TP percentages
-   - Fee per trade
-   - Slippage or delay cost
-   - Minimum trade count threshold (`t_min`)
-4. `get_ret` returns a pandas Series of trade returns (`Ret`), which you can use for further performance evaluation.
+Then open http://localhost:8501 in your browser.
 
----
+## Architecture
 
-## Example
+```
+vectorized-trade-simulator/
+├── simulator/           # Core engine (pip-installable)
+│   ├── returns.py       # Trade simulation (numba optional)
+│   ├── metrics.py       # Sharpe, drawdown, alpha, beta, accuracy
+│   ├── signals.py       # Signal enum, encode, aggregate, tecana bridge
+│   ├── scoring.py       # 8 scoring formulas (A–H)
+│   ├── decay.py         # Time-decay weighting
+│   └── resample.py      # OHLCV resampling
+├── data/                # Data handling
+│   ├── parser.py        # Smart format/column detection
+│   ├── sources.py       # yfinance + ccxt connectors
+│   └── validator.py     # Data quality checks + auto-fix
+├── app.py               # Streamlit app (local, full)
+├── pages/               # Streamlit multi-page
+│   ├── 1_Data_Source.py # Upload file or download from API
+│   ├── 2_Configure.py   # SL/TP, signals, scoring
+│   ├── 3_Run_Backtest.py# Execute + progress bar
+│   └── 4_Results.py     # Charts + metrics + export
+└── demo/                # Streamlit Cloud demo (resource-capped)
+```
 
-```python
-import pandas as pd
-# Assuming 'df' is your OHLC DataFrame with 'Long_Trade' and 'Short_Trade' columns defined
+## Streamlit App Pages
 
-take_profit_pct = 0.03
-stop_loss_pct = 0.02
-fee_per_trade = 0.0005
-minimum_trades = 5
-signal_columns = ['Long_Trade', 'Short_Trade']
+| Page | Description |
+|------|-------------|
+| **📂 Data Source** | Upload CSV/Parquet/Excel (auto-detects columns) or download from Yahoo Finance / crypto exchanges |
+| **⚙️ Configure** | Set SL/TP (fixed or grid search), fees, slippage, select signals from 160+ tecana options, choose scoring formula |
+| **▶️ Run Backtest** | Execute with progress bar, view trade log and metrics |
+| **📈 Results** | Interactive equity curve, drawdown chart, return histogram, trade entries/exits on price, CSV export |
 
-returns_series = get_ret(df, signal_columns, [0, 0, 0, 0], stop_loss_pct, take_profit_pct, fee_per_trade, minimum_trades)
+## Signal Convention
 
-print(returns_series.describe())
+| Value | Meaning |
+|-------|---------|
+| **+1** | LONG entry (bullish) |
+| **-1** | SHORT entry (bearish) |
+| **0** | No signal (neutral) |
 
+## Dependencies
+
+- **Required:** numpy, pandas, streamlit, plotly
+- **Recommended:** tecana (90+ indicators), yfinance (equity data)
+- **Optional:** ccxt (crypto), numba (JIT acceleration), matplotlib
+
+## Cloud Demo
+
+A resource-capped demo runs on Streamlit Community Cloud with sample data and built-in signal generators (RSI crossover, SMA crossover). No installation needed.
+
+## Disclaimer
+
+**This software is provided "as-is" without any express or implied warranty.**
+
+The backtesting engine, technical indicators, and trading signals are based on mathematical formulas applied to historical price data. **There is no guarantee that the calculations are free of errors, bugs, or inaccuracies.** Results are hypothetical simulations — past performance does not predict future results.
+
+The output is for **informational and educational purposes only** and should **not** be construed as financial advice or trading recommendations. **The author is not responsible for any financial losses, trading errors, or damages** arising from the use of this software. Trading and investing involve substantial risk of loss.
+
+By using this software, you acknowledge and accept these risks.
 
 ## License
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) license.
 
-Free to view, share, and adapt for non-commercial use.
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
 
-Commercial use requires explicit permission or paid licensing.
-
-Learn more about this license
+Free to view, share, and adapt for non-commercial use. Commercial use requires explicit permission.
 
 ## Contact
-For licensing inquiries or collaboration:
 
-Gustavo Rabino
-Email: gusrab@gmail.com
-LinkedIn: https://www.linkedin.com/in/gustavo-rabino-58411238/
+Gustavo Rabino — gusrab@gmail.com
 
-
-
-
+- GitHub: https://github.com/Neogus/vectorized-trade-simulator
+- Tecana library: https://github.com/Neogus/tecana
+- LinkedIn: https://www.linkedin.com/in/gustavo-rabino-58411238/

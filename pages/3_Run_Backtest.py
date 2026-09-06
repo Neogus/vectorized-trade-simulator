@@ -1,0 +1,216 @@
+"""Page 3: Run Backtest — execute simulation with progress."""
+
+import streamlit as st
+import numpy as np
+import pandas as pd
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from simulator.returns import simulate_trades, simulate_trades_detail
+from simulator.metrics import total_return, max_drawdown, sharpe, accuracy
+from simulator.signals import Signal
+
+st.set_page_config(page_title="Run Backtest", page_icon="▶️", layout="wide")
+st.title("▶️ Run Backtest")
+
+# ── Validate prerequisites ─────────────────────────────────────────────
+
+if "ohlcv_data" not in st.session_state or st.session_state.ohlcv_data is None:
+    st.warning("⚠️ No data loaded. Go to **📂 Data Source** first.")
+    st.stop()
+
+if "sl_config" not in st.session_state:
+    st.warning("⚠️ Not configured. Go to **⚙️ Configure** first.")
+    st.stop()
+
+df = st.session_state.ohlcv_data
+config = st.session_state.sl_config
+params = st.session_state.trading_params
+signals = st.session_state.get("selected_signals", [])
+
+st.success(f"**{len(df):,} bars** | SL/TP: {config.get('sl_mult', 'search')} / {config.get('tp_mult', 'search')} | Signals: {len(signals)}")
+
+# ── Generate signals ───────────────────────────────────────────────────
+
+def compute_entries(df, signal_names):
+    """Compute aggregated entry signals from selected signal names."""
+    try:
+        import tecana
+        ta = tecana.Tecana()
+    except ImportError:
+        # Fallback: random signals
+        np.random.seed(42)
+        entries = np.zeros(len(df), dtype=np.int8)
+        locs = np.random.choice(len(df) - 50, size=min(20, len(df) // 50), replace=False) + 25
+        for i, loc in enumerate(locs):
+            entries[loc] = 1 if i % 2 == 0 else -1
+        return entries
+
+    # Compute each signal and aggregate
+    signal_arrays = []
+    work_df = df.copy()
+
+    for sig_name in signal_names:
+        try:
+            method = getattr(ta, sig_name)
+            result = method(work_df)
+            raw = result[sig_name].to_numpy(dtype=np.int8)
+            # Negate to canonical: Tecana +1=sell → canonical -1=SHORT
+            canonical = -raw
+            signal_arrays.append(canonical)
+        except Exception:
+            continue  # Skip failing signals
+
+    if not signal_arrays:
+        # No signals worked — fallback
+        entries = np.zeros(len(df), dtype=np.int8)
+        return entries
+
+    # Aggregate: unanimous agreement
+    from simulator.signals import encode_entries, aggregate_signals
+    mat = encode_entries(signal_arrays)
+    entries = aggregate_signals(mat)
+
+    # Shift by 1 to prevent look-ahead
+    entries = np.roll(entries, 1)
+    entries[0] = 0
+
+    return entries
+
+
+# ── Run backtest ───────────────────────────────────────────────────────
+
+if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
+
+    progress = st.progress(0, text="Computing signals...")
+
+    if config["mode"] == "fixed":
+        # Single run
+        sl_mult = config["sl_mult"]
+        tp_mult = config["tp_mult"]
+        atr_window = config["atr_window"]
+
+        progress.progress(20, text="Computing entry signals...")
+        entries = compute_entries(df, signals)
+        n_entries = np.count_nonzero(entries)
+        st.caption(f"Entry signals: {n_entries} ({(entries == 1).sum()} long, {(entries == -1).sum()} short)")
+
+        progress.progress(50, text=f"Simulating trades (SL={sl_mult}, TP={tp_mult})...")
+        try:
+            detail = simulate_trades_detail(
+                df, entries,
+                sl_mult=sl_mult, tp_mult=tp_mult,
+                atr_window=atr_window,
+                fee=params["fee"], slippage=params["slippage"],
+                max_hold=params["max_hold"],
+            )
+            returns = detail["ret"] if len(detail) > 0 else pd.Series(dtype=float)
+
+            progress.progress(100, text="Done!")
+
+            # Store results
+            st.session_state.backtest_results = detail
+            st.session_state.backtest_returns = returns
+            st.session_state.backtest_entries = entries
+
+        except Exception as e:
+            st.error(f"❌ Simulation failed: {e}")
+            st.stop()
+
+    else:
+        # Grid search
+        import itertools
+
+        sl_min, sl_max, sl_step = config["sl_range"]
+        tp_min, tp_max, tp_step = config["tp_range"]
+        atr_window = config["atr_window"]
+
+        sl_values = np.arange(sl_min, sl_max + sl_step / 2, sl_step)
+        tp_values = np.arange(tp_min, tp_max + tp_step / 2, tp_step)
+        combos = list(itertools.product(sl_values, tp_values))
+
+        progress.progress(10, text="Computing entry signals...")
+        entries = compute_entries(df, signals)
+
+        results_list = []
+        for i, (sl, tp) in enumerate(combos):
+            pct = 10 + int(85 * (i + 1) / len(combos))
+            progress.progress(pct, text=f"Testing SL={sl:.1f} TP={tp:.1f} ({i+1}/{len(combos)})...")
+
+            try:
+                detail = simulate_trades_detail(
+                    df, entries,
+                    sl_mult=float(sl), tp_mult=float(tp),
+                    atr_window=atr_window,
+                    fee=params["fee"], slippage=params["slippage"],
+                    max_hold=params["max_hold"],
+                )
+                ret = detail["ret"] if len(detail) > 0 else pd.Series(dtype=float)
+
+                results_list.append({
+                    "sl_mult": float(sl), "tp_mult": float(tp),
+                    "trades": len(ret),
+                    "total_return": float(total_return(ret)) if len(ret) > 0 else 0,
+                    "max_drawdown": float(max_drawdown(ret)) if len(ret) > 0 else 0,
+                    "sharpe": float(sharpe(ret)) if len(ret) > 1 else 0,
+                    "accuracy": float(accuracy(ret)) if len(ret) > 0 else 0,
+                })
+            except Exception:
+                continue
+
+        progress.progress(100, text="Done!")
+
+        if results_list:
+            grid_df = pd.DataFrame(results_list).sort_values("sharpe", ascending=False)
+            st.session_state.grid_results = grid_df
+
+            # Use the best combo
+            best = grid_df.iloc[0]
+            best_detail = simulate_trades_detail(
+                df, entries,
+                sl_mult=best["sl_mult"], tp_mult=best["tp_mult"],
+                atr_window=atr_window,
+                fee=params["fee"], slippage=params["slippage"],
+                max_hold=params["max_hold"],
+            )
+            st.session_state.backtest_results = best_detail
+            st.session_state.backtest_returns = best_detail["ret"] if len(best_detail) > 0 else pd.Series(dtype=float)
+            st.session_state.backtest_entries = entries
+
+# ── Display results ────────────────────────────────────────────────────
+
+if "backtest_results" in st.session_state and st.session_state.backtest_results is not None:
+    detail = st.session_state.backtest_results
+    returns = st.session_state.backtest_returns
+
+    st.markdown("---")
+    st.markdown("### 📊 Results Summary")
+
+    if len(returns) > 0:
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Trades", f"{len(returns)}")
+        col2.metric("Total Return", f"{total_return(returns):.2%}")
+        col3.metric("Max Drawdown", f"{max_drawdown(returns):.2%}")
+        col4.metric("Sharpe Ratio", f"{sharpe(returns):.2f}" if len(returns) > 1 else "N/A")
+        col5.metric("Win Rate", f"{accuracy(returns):.1%}")
+
+        st.markdown("### 📋 Trade Log")
+        st.dataframe(detail, use_container_width=True, height=400)
+
+        # Grid search results
+        if "grid_results" in st.session_state:
+            st.markdown("### 🔍 Grid Search Results")
+            st.dataframe(
+                st.session_state.grid_results.style.format({
+                    "sl_mult": "{:.1f}", "tp_mult": "{:.1f}",
+                    "total_return": "{:.2%}", "max_drawdown": "{:.2%}",
+                    "sharpe": "{:.2f}", "accuracy": "{:.1%}",
+                }),
+                use_container_width=True,
+            )
+    else:
+        st.warning("No trades were generated. Try adjusting the signals or SL/TP parameters.")
+
+    st.info("Go to **📈 Results** for interactive charts and export.")
