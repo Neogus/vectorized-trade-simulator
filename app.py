@@ -66,8 +66,9 @@ st.sidebar.caption(
     "[GitHub](https://github.com/Neogus/vectorized-trade-simulator)"
 )
 st.sidebar.caption(
-    "☕ [Support this project](https://github.com/sponsors/Neogus) · "
-    "[Ko-fi](https://ko-fi.com/neogus43222)"
+    "☕ [Support](https://github.com/sponsors/Neogus) · "
+    "[Ko-fi](https://ko-fi.com/neogus43222) · "
+    "[BMC](https://buymeacoffee.com/neogus)"
 )
 
 # ── Main page ──────────────────────────────────────────────────────────

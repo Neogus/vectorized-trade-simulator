@@ -24,8 +24,9 @@ st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
 st.sidebar.page_link("pages/5_Guide.py", label="📖 Guide")
 st.sidebar.markdown("---")
 st.sidebar.caption(
-    "☕ [Support this project](https://github.com/sponsors/Neogus) · "
-    "[Ko-fi](https://ko-fi.com/neogus43222)"
+    "☕ [Support](https://github.com/sponsors/Neogus) · "
+    "[Ko-fi](https://ko-fi.com/neogus43222) · "
+    "[BMC](https://buymeacoffee.com/neogus)"
 )
 
 st.title("⚙️ Configure Backtest")
