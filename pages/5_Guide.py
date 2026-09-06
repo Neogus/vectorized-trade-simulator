@@ -23,6 +23,10 @@ st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
 st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
 st.sidebar.page_link("pages/5_Guide.py", label="📖 Guide")
 st.sidebar.markdown("---")
+st.sidebar.caption(
+    "☕ [Support this project](https://github.com/sponsors/Neogus) · "
+    "[Ko-fi](https://ko-fi.com/neogus43222)"
+)
 
 st.title("📖 Guide & Glossary")
 
@@ -204,8 +208,18 @@ Click **Auto-fix** to apply forward-fill cleaning.
 """)
 
 st.markdown("---")
-st.caption(
-    "⚠️ *This tool is for educational and informational purposes only. "
-    "There is no guarantee that calculations are error-free. "
-    "Always conduct your own research before making investment decisions.*"
-)
+
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.caption(
+        "⚠️ *This tool is for educational and informational purposes only. "
+        "There is no guarantee that calculations are error-free. "
+        "Always conduct your own research before making investment decisions.*"
+    )
+with col2:
+    st.markdown(
+        '<p style="text-align:right; font-size:0.85em; opacity:0.7;">'
+        '☕ <a href="https://github.com/sponsors/Neogus">Sponsor</a> · '
+        '<a href="https://ko-fi.com/neogus43222">Ko-fi</a></p>',
+        unsafe_allow_html=True,
+    )

@@ -65,6 +65,10 @@ st.sidebar.caption(
     "[Tecana](https://github.com/Neogus/tecana) · "
     "[GitHub](https://github.com/Neogus/vectorized-trade-simulator)"
 )
+st.sidebar.caption(
+    "☕ [Support this project](https://github.com/sponsors/Neogus) · "
+    "[Ko-fi](https://ko-fi.com/neogus43222)"
+)
 
 # ── Main page ──────────────────────────────────────────────────────────
 

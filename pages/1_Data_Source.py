@@ -27,6 +27,10 @@ st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
 st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
 st.sidebar.page_link("pages/5_Guide.py", label="📖 Guide")
 st.sidebar.markdown("---")
+st.sidebar.caption(
+    "☕ [Support this project](https://github.com/sponsors/Neogus) · "
+    "[Ko-fi](https://ko-fi.com/neogus43222)"
+)
 
 st.title("📂 Data Source")
 
