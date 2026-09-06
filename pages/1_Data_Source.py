@@ -25,6 +25,7 @@ st.sidebar.page_link("pages/1_Data_Source.py", label="📂 Data Source")
 st.sidebar.page_link("pages/2_Configure.py", label="⚙️ Configure")
 st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
 st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
+st.sidebar.page_link("pages/5_Guide.py", label="📖 Guide")
 st.sidebar.markdown("---")
 
 st.title("📂 Data Source")

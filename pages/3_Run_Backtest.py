@@ -27,6 +27,7 @@ st.sidebar.page_link("pages/1_Data_Source.py", label="📂 Data Source")
 st.sidebar.page_link("pages/2_Configure.py", label="⚙️ Configure")
 st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
 st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
+st.sidebar.page_link("pages/5_Guide.py", label="📖 Guide")
 st.sidebar.markdown("---")
 
 st.title("▶️ Run Backtest")
@@ -50,8 +51,22 @@ st.success(f"**{len(df):,} bars** | SL/TP: {config.get('sl_mult', 'search')} / {
 
 # ── Generate signals ───────────────────────────────────────────────────
 
-def compute_entries(df, signal_names):
+def compute_entries(df, signal_names, agg_mode="Any signal (union)"):
     """Compute aggregated entry signals from selected signal names."""
+
+    # Built-in RSI fallback (no tecana)
+    if signal_names == ["builtin_rsi"] or not signal_names:
+        delta = df["close"].diff()
+        gain = delta.clip(lower=0).rolling(14).mean()
+        loss = (-delta).clip(lower=0).rolling(14).mean()
+        rs = gain / loss.replace(0, np.nan)
+        rsi = 100 - (100 / (1 + rs))
+        prev_rsi = rsi.shift(1)
+        entries = np.zeros(len(df), dtype=np.int8)
+        entries[(prev_rsi < 30) & (rsi >= 30)] = 1
+        entries[(prev_rsi > 70) & (rsi <= 70)] = -1
+        return entries
+
     try:
         import tecana
         ta = tecana.Tecana()
@@ -64,7 +79,7 @@ def compute_entries(df, signal_names):
             entries[loc] = 1 if i % 2 == 0 else -1
         return entries
 
-    # Compute each signal and aggregate
+    # Compute each signal
     signal_arrays = []
     work_df = df.copy()
 
@@ -77,17 +92,34 @@ def compute_entries(df, signal_names):
             canonical = -raw
             signal_arrays.append(canonical)
         except Exception:
-            continue  # Skip failing signals
+            continue
 
     if not signal_arrays:
-        # No signals worked — fallback
         entries = np.zeros(len(df), dtype=np.int8)
         return entries
 
-    # Aggregate: unanimous agreement
-    from simulator.signals import encode_entries, aggregate_signals
-    mat = encode_entries(signal_arrays)
-    entries = aggregate_signals(mat)
+    # Aggregate based on mode
+    mat = np.column_stack(signal_arrays)  # (rows, k)
+    k = mat.shape[1]
+    entries = np.zeros(len(df), dtype=np.int8)
+
+    if "Any" in agg_mode or k == 1:
+        # Union: entry when ANY signal fires (use first non-zero per bar)
+        for i in range(k):
+            long_mask = (entries == 0) & (mat[:, i] == 1)
+            short_mask = (entries == 0) & (mat[:, i] == -1)
+            entries[long_mask] = 1
+            entries[short_mask] = -1
+    elif "Majority" in agg_mode:
+        row_sum = mat.sum(axis=1)
+        threshold = k / 2
+        entries[row_sum > threshold] = 1
+        entries[row_sum < -threshold] = -1
+    else:  # Unanimous
+        all_long = (mat == 1).all(axis=1)
+        all_short = (mat == -1).all(axis=1)
+        entries[all_long] = 1
+        entries[all_short] = -1
 
     # Shift by 1 to prevent look-ahead
     entries = np.roll(entries, 1)
@@ -109,7 +141,8 @@ if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
         atr_window = config["atr_window"]
 
         progress.progress(20, text="Computing entry signals...")
-        entries = compute_entries(df, signals)
+        agg_mode = st.session_state.get("aggregation_mode", "Any signal (union)")
+        entries = compute_entries(df, signals, agg_mode)
         n_entries = np.count_nonzero(entries)
         st.caption(f"Entry signals: {n_entries} ({(entries == 1).sum()} long, {(entries == -1).sum()} short)")
 
@@ -148,7 +181,8 @@ if st.button("🚀 Run Backtest", type="primary", use_container_width=True):
         combos = list(itertools.product(sl_values, tp_values))
 
         progress.progress(10, text="Computing entry signals...")
-        entries = compute_entries(df, signals)
+        agg_mode = st.session_state.get("aggregation_mode", "Any signal (union)")
+        entries = compute_entries(df, signals, agg_mode)
 
         results_list = []
         for i, (sl, tp) in enumerate(combos):

@@ -21,6 +21,7 @@ st.sidebar.page_link("pages/1_Data_Source.py", label="📂 Data Source")
 st.sidebar.page_link("pages/2_Configure.py", label="⚙️ Configure")
 st.sidebar.page_link("pages/3_Run_Backtest.py", label="▶️ Run Backtest")
 st.sidebar.page_link("pages/4_Results.py", label="📈 Results")
+st.sidebar.page_link("pages/5_Guide.py", label="📖 Guide")
 st.sidebar.markdown("---")
 
 st.title("⚙️ Configure Backtest")
@@ -98,6 +99,16 @@ st.session_state.trading_params = {
 
 st.markdown("### 📶 Signal Selection")
 
+# Aggregation mode
+agg_mode = st.radio(
+    "Aggregation mode (when multiple signals selected):",
+    ["Any signal (union)", "Majority agree", "All agree (unanimous)"],
+    index=0,
+    horizontal=True,
+    help="'Any' = entry when at least 1 signal fires. 'Majority' = more than half agree. 'Unanimous' = all must agree.",
+)
+st.session_state.aggregation_mode = agg_mode
+
 # Check if tecana is available
 try:
     import tecana
@@ -123,12 +134,12 @@ if TECANA_AVAILABLE:
         f"Volatility ({len(volatility)})",
     ])
 
+    # Default: just rsi_m — guarantees entries on any dataset
     with tab_m:
         sel_m = st.multiselect("Momentum signals", momentum,
-                                default=["rsi_m", "macd_m"] if "rsi_m" in momentum else momentum[:2])
+                                default=["rsi_m"] if "rsi_m" in momentum else momentum[:1])
     with tab_z:
-        sel_z = st.multiselect("Zone signals", zone,
-                                default=["rsi_z"] if "rsi_z" in zone else [])
+        sel_z = st.multiselect("Zone signals", zone, default=[])
     with tab_t:
         sel_t = st.multiselect("Trend signals", trend, default=[])
     with tab_v:
@@ -136,25 +147,53 @@ if TECANA_AVAILABLE:
 
     selected_signals = sel_m + sel_z + sel_t + sel_v
 else:
-    st.warning("⚠️ Tecana not installed. Using random signals for demo. Install with: `pip install tecana`")
-    selected_signals = ["random_signal"]
+    st.warning("⚠️ Tecana not installed. Using built-in RSI signal. Install with: `pip install tecana`")
+    selected_signals = ["builtin_rsi"]
 
 st.session_state.selected_signals = selected_signals
 if selected_signals:
-    st.info(f"**{len(selected_signals)} signals selected:** {', '.join(selected_signals)}")
+    st.info(f"**{len(selected_signals)} signal(s) selected:** {', '.join(selected_signals)} — mode: {agg_mode.split('(')[0].strip()}")
 
 # ── Scoring ────────────────────────────────────────────────────────────
 
-st.markdown("### 🏆 Scoring")
+st.markdown("### 🏆 Scoring Formula")
 
 from simulator.scoring import SCORE_FORMULAS
 
-col1, col2 = st.columns(2)
+# Descriptions for each formula
+FORMULA_DESCRIPTIONS = {
+    "A": "**Composite** — Sharpe consistency × drawdown factor × alpha factor. Best all-round formula for balanced evaluation.",
+    "B": "**Sharpe Focus** — `sharpe_avg - sharpe_dev`. Rewards high average Sharpe with low variance across folds.",
+    "C": "**Sharpe Focus** — Same as B (legacy duplicate).",
+    "D": "**Accuracy + Drawdown** — `(accuracy - accuracy_dev) × drawdown_factor`. Rewards consistent win rate with controlled drawdowns.",
+    "E": "**Alpha Focus** — `alpha_avg - return_dev`. Rewards excess return over the market with low dispersion.",
+    "F": "**Alpha Focus** — Same as E (legacy duplicate).",
+    "G": "**Alpha Focus** — Same as E (legacy duplicate).",
+    "H": "**Balanced Composite** — Most comprehensive. Combines Sharpe consistency, drawdown control, alpha factor, and accuracy bonus (>50% win rate). Recommended for thorough analysis.",
+}
+
+col1, col2 = st.columns([1, 2])
 with col1:
-    formula = st.selectbox("Scoring Formula", list(SCORE_FORMULAS.keys()),
-                            help="How to rank strategies. A=simple Sharpe, H=most comprehensive.")
+    formula = st.selectbox("Formula", list(SCORE_FORMULAS.keys()), index=0,
+                            help="Select a scoring formula to rank strategies.")
 with col2:
-    st.markdown(f"**Formula {formula}** function: `{SCORE_FORMULAS[formula].__name__}`")
+    st.markdown(FORMULA_DESCRIPTIONS.get(formula, ""))
+
+with st.expander("📖 All scoring formulas explained"):
+    for key, desc in FORMULA_DESCRIPTIONS.items():
+        st.markdown(f"**Formula {key}:** {desc}")
+    st.markdown("---")
+    st.markdown(
+        "**Key metrics used in scoring:**\n"
+        "- `sharpe_avg` — Average Sharpe ratio across validation folds\n"
+        "- `sharpe_dev` — Standard deviation of Sharpe across folds (lower = more consistent)\n"
+        "- `dd_avg` — Average max drawdown (negative value; closer to 0 = better)\n"
+        "- `dd_dev` — Drawdown variance across folds\n"
+        "- `alpha_avg` — Average excess return over market benchmark\n"
+        "- `ret_dev_avg` — Average return standard deviation\n"
+        "- `tacc_avg` — Average trade accuracy (win rate)\n"
+        "- `tacc_dev` — Win rate variance across folds"
+    )
 
 st.session_state.scoring = {"formula": formula}
 
@@ -167,6 +206,7 @@ config = {
     "SL/TP": st.session_state.sl_config,
     "Costs": st.session_state.trading_params,
     "Signals": len(selected_signals),
+    "Aggregation": agg_mode.split("(")[0].strip(),
     "Scoring": formula,
 }
 st.json(config)
