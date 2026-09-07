@@ -36,7 +36,7 @@ jobs:
 
   keepalive-commit:
     runs-on: ubuntu-latest
-    # Only run once a week (Sunday at ~22:15 UTC) to keep repo "active"
+    # Run once daily (at ~22:15 UTC) to keep repo "active"
     if: github.event.schedule == '15 22 * * *'
     steps:
       - uses: actions/checkout@v4
