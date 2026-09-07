@@ -2,7 +2,7 @@
 
 A high-performance backtesting engine for testing stop-loss / take-profit strategies on historical OHLCV data, wrapped in an interactive Streamlit dashboard.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://vectorized-trade-simultaor.streamlit.app)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://vectorized-trade-simulator.streamlit.app)
 
 ## Features
 
@@ -27,7 +27,7 @@ streamlit run app.py
 
 Then open http://localhost:8501 in your browser.
 
-> **🌐 Try it online:** [vectorized-trade-simultaor.streamlit.app](https://vectorized-trade-simultaor.streamlit.app) — no installation needed!
+> **🌐 Try it online:** [vectorized-trade-simulator.streamlit.app](https://vectorized-trade-simulator.streamlit.app) — no installation needed!
 
 ## Architecture
 
