@@ -2,12 +2,53 @@ name: Keep Streamlit Alive
 
 on:
   schedule:
-    - cron: '0 */8 * * *'  # Every 8 hours
+    # Staggered 3–5 h intervals with irregular minutes to look organic
+    - cron: '33 2 * * *'   # 02:33 UTC
+    - cron: '18 6 * * *'   # 06:18 UTC  (+3 h 45 m)
+    - cron: '44 9 * * *'   # 09:44 UTC  (+3 h 26 m)
+    - cron: '7 14 * * *'   # 14:07 UTC  (+4 h 23 m)
+    - cron: '52 17 * * *'  # 17:52 UTC  (+3 h 45 m)
+    - cron: '15 22 * * *'  # 22:15 UTC  (+4 h 23 m)
   workflow_dispatch:        # Manual trigger
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping app
-        run: curl -s -o /dev/null -w "%{http_code}" https://vectorized-trade-simulator.streamlit.app/
+      - name: Random jitter (0–5 min)
+        run: sleep $((RANDOM % 300))
+
+      - name: Ping Streamlit app
+        run: |
+          for i in 1 2 3; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                   -L --max-time 60 \
+                   "https://vectorized-trade-simulator.streamlit.app/")
+            echo "Attempt $i — HTTP $CODE"
+            if [ "$CODE" = "200" ] || [ "$CODE" = "302" ]; then
+              echo "App is alive"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "App did not respond after 3 attempts"
+          exit 1
+
+  keepalive-commit:
+    runs-on: ubuntu-latest
+    # Only run once a week (Sunday at ~22:15 UTC) to keep repo "active"
+    if: github.event.schedule == '15 22 * * *'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump keepalive timestamp
+        run: date -u +"%Y-%m-%dT%H:%M:%SZ" > .last_alive
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .last_alive
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "chore: keepalive $(cat .last_alive)"
+          git push
