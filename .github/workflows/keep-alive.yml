@@ -20,16 +20,18 @@ jobs:
 
       - name: Ping Streamlit app
         run: |
+          set +e
           for i in 1 2 3; do
             CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-                   -L --max-time 60 \
-                   "https://vectorized-trade-simulator.streamlit.app/")
+                   --max-time 120 \
+                   "https://vectorized-trade-simulator.streamlit.app/" 2>/dev/null)
             echo "Attempt $i — HTTP $CODE"
-            if [ "$CODE" = "200" ] || [ "$CODE" = "302" ]; then
+            if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
               echo "App is alive"
               exit 0
             fi
-            sleep 20
+            echo "Waiting 30s before retry..."
+            sleep 30
           done
           echo "App did not respond after 3 attempts"
           exit 1
