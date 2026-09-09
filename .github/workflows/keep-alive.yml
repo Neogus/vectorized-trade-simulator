@@ -12,7 +12,7 @@ jobs:
       - name: Ping app
         run: |
           set +e
-          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "http://18.195.171.220/trade/" 2>/dev/null)
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://d1rarx529p1tpn.cloudfront.net/trade/" 2>/dev/null)
           echo "HTTP $CODE"
           if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
             echo "App is healthy"

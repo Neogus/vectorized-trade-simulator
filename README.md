@@ -2,7 +2,7 @@
 
 A high-performance backtesting engine for testing stop-loss / take-profit strategies on historical OHLCV data, wrapped in an interactive Streamlit dashboard.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://vectorized-trade-simulator.streamlit.app)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-AWS_EC2-FF9900?style=for-the-badge&logo=amazonec2)](https://d1rarx529p1tpn.cloudfront.net/trade/)
 
 ## Features
 
@@ -27,7 +27,7 @@ streamlit run app.py
 
 Then open http://localhost:8501 in your browser.
 
-> **🌐 Try it online:** [vectorized-trade-simulator.streamlit.app](https://vectorized-trade-simulator.streamlit.app) — no installation needed!
+> **🌐 Try it online:** [d1rarx529p1tpn.cloudfront.net/trade/](https://d1rarx529p1tpn.cloudfront.net/trade/) — no installation needed!
 
 ## Architecture
 
@@ -50,7 +50,7 @@ vectorized-trade-simulator/
 │   ├── 2_Configure.py   # SL/TP, signals, scoring
 │   ├── 3_Run_Backtest.py# Execute + progress bar
 │   └── 4_Results.py     # Charts + metrics + export
-└── demo/                # Streamlit Cloud demo (resource-capped)
+└── demo/                # Resource-capped demo (resource-capped)
 ```
 
 ## Streamlit App Pages
@@ -79,9 +79,9 @@ The simulator engine uses:
 - **Recommended:** tecana (90+ indicators), yfinance (equity data)
 - **Optional:** ccxt (crypto), numba (JIT acceleration), matplotlib
 
-## Cloud Demo
+## Deployment
 
-A resource-capped demo runs on Streamlit Community Cloud with sample data and built-in signal generators (RSI crossover, SMA crossover). No installation needed.
+Hosted on AWS EC2 (free tier) with Nginx reverse proxy. Auto-deploys via GitHub Actions on every push to `main`.
 
 ## Disclaimer
 
