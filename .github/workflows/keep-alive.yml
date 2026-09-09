@@ -1,54 +1,22 @@
-name: Keep Streamlit Alive
+name: Health Check
 
 on:
   schedule:
-    # Staggered 3–5 h intervals with irregular minutes to look organic
-    - cron: '33 2 * * *'   # 02:33 UTC
-    - cron: '18 6 * * *'   # 06:18 UTC  (+3 h 45 m)
-    - cron: '44 9 * * *'   # 09:44 UTC  (+3 h 26 m)
-    - cron: '7 14 * * *'   # 14:07 UTC  (+4 h 23 m)
-    - cron: '52 17 * * *'  # 17:52 UTC  (+3 h 45 m)
-    - cron: '15 22 * * *'  # 22:15 UTC  (+4 h 23 m)
-  workflow_dispatch:        # Manual trigger
-
-permissions:
-  contents: write
+    - cron: '30 */6 * * *'  # Every 6 hours (offset from mortgage)
+  workflow_dispatch:
 
 jobs:
-  keepalive:
+  health-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Random jitter (0–5 min)
-        run: sleep $((RANDOM % 300))
-
-      - name: Ping Streamlit app
+      - name: Ping app
         run: |
           set +e
-          for i in 1 2 3; do
-            CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-                   --max-time 120 \
-                   "https://vectorized-trade-simulator.streamlit.app/" 2>/dev/null)
-            echo "Attempt $i — HTTP $CODE"
-            if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
-              echo "App is alive"
-              break
-            fi
-            echo "Waiting 30s before retry..."
-            sleep 30
-          done
-
-      - name: Checkout repo
-        if: github.event.schedule == '15 22 * * *'
-        uses: actions/checkout@v5
-
-      - name: Bump keepalive timestamp
-        if: github.event.schedule == '15 22 * * *'
-        continue-on-error: true
-        run: |
-          date -u +"%Y-%m-%dT%H:%M:%SZ" > .last_alive
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .last_alive
-          git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "chore: keepalive $(cat .last_alive)"
-          git push
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "http://18.195.171.220/trade/" 2>/dev/null)
+          echo "HTTP $CODE"
+          if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
+            echo "App is healthy"
+          else
+            echo "WARNING: App may be down (HTTP $CODE)"
+            exit 1
+          fi
